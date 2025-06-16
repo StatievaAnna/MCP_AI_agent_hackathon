@@ -36,7 +36,7 @@ export default function PHQ9Form() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await axios.post('http://localhost:8000/survey', { answers })
+      await axios.post('http://localhost:3000/survey', { answers })
       setSubmitted(true)
     } catch (err) {
       alert('Ошибка при отправке данных')

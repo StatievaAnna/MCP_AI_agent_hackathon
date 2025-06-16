@@ -40,7 +40,7 @@ export default function ChatPage({ params }) {
     setInput('')
 
     try {
-      const response = await axios.post('http://localhost:8000/api/chat', userMessage)
+      const response = await axios.post('http://localhost:8001/api/chat', userMessage)
       setMessages(prev => [...prev, response.data])
     } catch (err) {
       console.error('Ошибка чата:', err)

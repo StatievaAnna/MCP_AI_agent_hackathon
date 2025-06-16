@@ -1,70 +1,67 @@
-'''
-from fastapi import FastAPI
-from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
-from typing import List
-from datetime import datetime
+# from fastapi import FastAPI
+# from pydantic import BaseModel
+# from fastapi.middleware.cors import CORSMiddleware
+# from typing import List
+# from datetime import datetime
 
-app = FastAPI()
+# app = FastAPI()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["http://localhost:3000"],
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 
-class PHQ9Submission(BaseModel):
-    answers: List[int]
-
+# class PHQ9Submission(BaseModel):
+#     answers: List[int]
 
 
+# @app.post("/survay")
+# def receive_phq9(submission: PHQ9Submission):
+#     score = sum(submission.answers)
+#     print(f"Оценка PHQ-9: {score}")
+#     return {"score": score, "severity": classify_score(score)}
 
-@app.post("/survay")
-def receive_phq9(submission: PHQ9Submission):
-    score = sum(submission.answers)
-    print(f"Оценка PHQ-9: {score}")
-    return {"score": score, "severity": classify_score(score)}
-
-def classify_score(score: int) -> str:
-    if score <= 4:
-        return "Минимальная депрессия"
-    elif score <= 9:
-        return "Лёгкая депрессия"
-    elif score <= 14:
-        return "Умеренная депрессия"
-    elif score <= 19:
-        return "Умеренно тяжёлая депрессия"
-    else:
-        return "Тяжёлая депрессия"
+# def classify_score(score: int) -> str:
+#     if score <= 4:
+#         return "Минимальная депрессия"
+#     elif score <= 9:
+#         return "Лёгкая депрессия"
+#     elif score <= 14:
+#         return "Умеренная депрессия"
+#     elif score <= 19:
+#         return "Умеренно тяжёлая депрессия"
+#     else:
+#         return "Тяжёлая депрессия"
 
 
-class SurveyData(BaseModel):
-    answers: List[int]
+# class SurveyData(BaseModel):
+#     answers: List[int]
 
-class ChatMessage(BaseModel):
-    text: str
-    sender: str
+# class ChatMessage(BaseModel):
+#     text: str
+#     sender: str
 
-def save_chat_message(text: str, sender: str):
-    with open("chat_history.txt", "a", encoding='utf-8') as f:
-        f.write(f"{datetime.now()} - {sender}: {text}\n")
+# def save_chat_message(text: str, sender: str):
+#     with open("chat_history.txt", "a", encoding='utf-8') as f:
+#         f.write(f"{datetime.now()} - {sender}: {text}\n")
 
-@app.post("/survey")
-async def submit_survey(data: SurveyData):
-    return {"message": "Данные сохранены"}
+# @app.post("/survey")
+# async def submit_survey(data: SurveyData):
+#     return {"message": "Данные сохранены"}
 
-@app.post("/api/chat")
-async def handle_chat(message: ChatMessage):
-    save_chat_message(message.text, message.sender)
+# @app.post("/api/chat")
+# async def handle_chat(message: ChatMessage):
+#     save_chat_message(message.text, message.sender)
 
-    #базовый ответ эхо
-    bot_response = "Это автоматический ответ. Ваше сообщение: " + message.text
-    save_chat_message(bot_response, "bot")
+#     #базовый ответ эхо
+#     bot_response = "Это автоматический ответ. Ваше сообщение: " + message.text
+#     save_chat_message(bot_response, "bot")
 
-    return {"text": bot_response, "sender": "bot"}
+#     return {"text": bot_response, "sender": "bot"}
 
-'''
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -75,6 +72,7 @@ import json
 import requests
 from dotenv import load_dotenv
 from openai import OpenAI
+from config import MODEL_API_KEY
 
 
 load_dotenv()
@@ -94,7 +92,7 @@ app.add_middleware(
 )
 
 
-MODEL_API_KEY = os.getenv("OPENAI_API_KEY")
+# MODEL_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=MODEL_API_KEY) if MODEL_API_KEY else None
 
 chat_histories: Dict[str, List[Dict]] = {}
@@ -139,14 +137,14 @@ def save_chat_history(chat_id: str, text: str, sender: str):
         chat_histories[chat_id] = []
 
     entry = {
-        "text": text,
-        "sender": sender,
-        "timestamp": datetime.now().isoformat()
+        "role": sender,
+        "content": text,
+        # "timestamp": datetime.now().isoformat()
     }
     chat_histories[chat_id].append(entry)
 
-    with open(f"chat_{chat_id}.log", "a", encoding='utf-8') as f:
-        f.write(f"{entry['timestamp']} - {sender}: {text}\n")
+    # with open(f"chat_{chat_id}.log", "a", encoding='utf-8') as f:
+    #     f.write(f"{entry['timestamp']} - {sender}: {text}\n")
 
 def load_tools_from_openapi(openapi_url: str):
     try:
@@ -218,7 +216,7 @@ def call_mcp_function(name: str, args: dict, name_to_path_map: dict) -> dict:
         return {"error": f"Unknown function name: {name}"}
 
     url = f"{base_url}{path}"
-    print(f"Вызов функции '{name}' по адресу: {url} с параметрами: {args}")
+    # print(f"Вызов функции '{name}' по адресу: {url} с параметрами: {args}")
 
     try:
         response = requests.get(url, params=args)
@@ -234,6 +232,7 @@ def generate_ai_response(messages: list) -> str:
     try:
         openapi_url = "http://localhost:8000/openapi.json"
         tools, name_to_path_map = load_tools_from_openapi(openapi_url)
+        print(f'messages: {messages}')
 
         for i in range(10):
             response = client.chat.completions.create(
@@ -254,7 +253,7 @@ def generate_ai_response(messages: list) -> str:
             func_name = tool_call.function.name
 
             mcp_result = call_mcp_function(func_name, args, name_to_path_map)
-            print("Результаты MCP:", mcp_result)
+            # print("Результаты MCP:", mcp_result)
 
             messages.append(msg)
             messages.append({
@@ -286,7 +285,7 @@ def start_new_chat(chat_id: str, score: int = None) -> str:
         "role": "assistant",
         "content": welcome_msg
     })
-    save_chat_history(chat_id, welcome_msg, "bot")
+    save_chat_history(chat_id, welcome_msg, "assistant")
 
     return welcome_msg
 
@@ -316,18 +315,18 @@ async def handle_chat(message: ChatMessage):
     if message.text.lower() in {"выход", "exit", "quit"}:
         bot_response = "Спасибо за беседу! Если будут вопросы - обращайтесь."
     else:
-        chat_histories[message.chat_id].append({
-            "role": "user",
-            "content": message.text
-        })
+        # chat_histories[message.chat_id].append({
+        #     "role": "user",
+        #     "content": message.text
+        # })
         save_chat_history(message.chat_id, message.text, "user")
 
-        bot_response = generate_ai_response(chat_histories[message.chat_id])ю
-        chat_histories[message.chat_id].append({
-            "role": "assistant",
-            "content": bot_response
-        })
-        save_chat_history(message.chat_id, bot_response, "bot")
+        bot_response = generate_ai_response(chat_histories[message.chat_id])
+        # chat_histories[message.chat_id].append({
+        #     "role": "assistant",
+        #     "content": bot_response
+        # })
+        save_chat_history(message.chat_id, bot_response, "assistant")
 
     return {
         "text": bot_response,
