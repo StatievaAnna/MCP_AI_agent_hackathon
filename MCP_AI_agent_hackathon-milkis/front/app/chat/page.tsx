@@ -1,18 +1,41 @@
 'use client'
-
 import { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
 import Link from 'next/link'
 
-export default function ChatPage() {
-  const [messages, setMessages] = useState<Array<{text: string, sender: 'user' | 'bot'}>>([])
+export default function ChatPage({ params }) {
+  const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [chatId, setChatId] = useState('')
+  const messagesEndRef = useRef(null)
+
+  // Инициализация чата при загрузке
+  useEffect(() => {
+    const newChatId = params.chatId || generateChatId()
+    setChatId(newChatId)
+
+    // Загрузка истории чата, если есть
+    loadChatHistory(newChatId)
+  }, [params.chatId])
+
+  const generateChatId = () => {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2)
+  }
+
+  const loadChatHistory = async (id) => {
+    try {
+      // Здесь можно добавить загрузку истории с сервера
+      const welcomeMessage = { text: "Привет! Я твой психологический помощник. Расскажи, как ты себя чувствуешь?", sender: 'bot' }
+      setMessages([welcomeMessage])
+    } catch (err) {
+      console.error('Ошибка загрузки истории:', err)
+    }
+  }
 
   const handleSend = async () => {
     if (!input.trim()) return
 
-    const userMessage = { text: input, sender: 'user' as const }
+    const userMessage = { text: input, sender: 'user', chat_id: chatId }
     setMessages(prev => [...prev, userMessage])
     setInput('')
 
