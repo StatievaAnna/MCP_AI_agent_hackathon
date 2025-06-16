@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -13,14 +13,9 @@ const questions = [
   "Вам кажется, что вы обуза для окружающих или не заслуживаете хорошего отношения?",
   "Вам сложно сосредоточиться на работе, учёбе или даже разговоре?",
   "Окружающие говорили, что вы стали двигаться или говорить медленнее обычного?",
-  "Бывало ли, что вы думали о смерти или о том, что «всем было бы лучше без меня»?"
-]
-
-const options = [
-  { label: "Совсем нет", value: 0 },
-  { label: "Иногда", value: 1 },
-  { label: "Довольно часто", value: 2 },
-  { label: "Почти каждый день", value: 3 }
+  "Бывало ли, что вы думали о смерти или о том, что «всем было бы лучше без меня»?",
+  "Как вы ощущаете свои отношения с коллегами или сокурсниками в последнее время?",
+  "Испытываете ли вы напряжение или стресс в рабочей/учебной среде из-за взаимодействия с другими?"
 ]
 
 const quotes = [
@@ -36,13 +31,21 @@ const quotes = [
   "Маленькие шаги ведут к большим переменам 🌿"
 ]
 
+function generateSessionId() {
+  return Math.floor(100000000 + Math.random() * 900000000)
+}
+
 export default function PHQ9Form() {
-  const [answers, setAnswers] = useState<number[]>(Array(9).fill(0))
+  const [answers, setAnswers] = useState<string[]>(Array(questions.length).fill(''))
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [submitted, setSubmitted] = useState(false)
   const [direction, setDirection] = useState(0)
-
   const [quoteMap, setQuoteMap] = useState<{ [key: number]: string }>({})
+  const [sessionId, setSessionId] = useState<number>(0)
+
+  useEffect(() => {
+    setSessionId(generateSessionId())
+  }, [])
 
   const getQuoteForQuestion = (index: number) => {
     if (quoteMap[index]) return quoteMap[index]
@@ -52,7 +55,7 @@ export default function PHQ9Form() {
     return newQuote
   }
 
-  const handleChange = (value: number) => {
+  const handleChange = (value: string) => {
     const updated = [...answers]
     updated[currentQuestion - 1] = value
     setAnswers(updated)
@@ -60,8 +63,16 @@ export default function PHQ9Form() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const data: Record<string, string> = {}
+    questions.forEach((q, i) => {
+      data[q] = answers[i]
+    })
+
     try {
-      await axios.post('http://localhost:8000/survay', { answers })
+      await axios.post('http://localhost:8000/survay', {
+        session_id: sessionId,
+        answers: data
+      })
       setSubmitted(true)
     } catch (err) {
       alert('Ошибка при отправке данных')
@@ -92,7 +103,7 @@ export default function PHQ9Form() {
             <p className="text-gray-800 text-lg text-left max-w-2xl mx-auto">
               <strong>PHQ-9</strong> — это стандартизированный опросник для оценки симптомов депрессии. Он помогает определить уровень психологического состояния за последние 2 недели.
               <br /><br />
-              Пожалуйста, внимательно прочитайте каждый вопрос и выберите вариант ответа, который наиболее точно отражает ваше состояние за последние 14 дней.
+              Пожалуйста, внимательно прочитайте каждый вопрос и введите честный ответ, описывающий ваше состояние за последние 14 дней.
             </p>
             <button
               type="button"
@@ -122,22 +133,13 @@ export default function PHQ9Form() {
                     {questions[currentQuestion - 1]}
                   </p>
 
-                  <div className="flex flex-col gap-3 items-start max-w-md mx-auto">
-                    {options.map((opt) => (
-                      <label key={opt.value} className="flex items-center gap-2 text-left cursor-pointer text-gray-800">
-                        <input
-                          type="radio"
-                          name={`q${currentQuestion}`}
-                          value={opt.value}
-                          checked={answers[currentQuestion - 1] === opt.value}
-                          onChange={() => handleChange(opt.value)}
-                          className="accent-blue-600"
-                          required
-                        />
-                        <span>{opt.label}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <textarea
+                  className="w-full max-w-2xl mx-auto border border-gray-300 rounded-xl p-4 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-black text-base bg-white min-h-[140px] shadow-sm"
+                  rows={4}
+                  value={answers[currentQuestion - 1]}
+                  onChange={(e) => handleChange(e.target.value)}
+                  required
+                  />
                 </motion.div>
               </AnimatePresence>
             </div>
